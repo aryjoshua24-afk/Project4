@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,7 +8,7 @@
 struct message {
 	char source[50];
 	char target[50]; 
-	char msg[200]; // message body
+	char msg[200];
 };
 
 void terminate(int sig) {
@@ -23,35 +22,35 @@ int main() {
 	int target;
 	int dummyfd;
 	struct message req;
-	signal(SIGPIPE,SIG_IGN);
-	signal(SIGINT,terminate);
-	server = open("serverFIFO",O_RDONLY);
-	dummyfd = open("serverFIFO",O_WRONLY);
+
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGINT, terminate);
+
+	server = open("serverFIFO", O_RDONLY);
+	dummyfd = open("serverFIFO", O_WRONLY);
 
 	while (1) {
-		// TODO:
-		// read requests from serverFIFO
+		int n = read(server, &req, sizeof(struct message));
 
+		if (n <= 0) {
+			continue;
+		}
 
+		printf("Received a request from %s to send the message %s to %s.\n",
+		       req.source, req.msg, req.target);
 
+		target = open(req.target, O_WRONLY);
 
+		if (target < 0) {
+			perror("open target FIFO");
+			continue;
+		}
 
-
-		printf("Received a request from %s to send the message %s to %s.\n",req.source,req.msg,req.target);
-
-		// TODO:
-		// open target FIFO and write the whole message struct to the target FIFO
-		// close target FIFO after writing the message
-
-
-
-
-
-
-
+		write(target, &req, sizeof(struct message));
+		close(target);
 	}
+
 	close(server);
 	close(dummyfd);
 	return 0;
 }
-
